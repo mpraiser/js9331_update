@@ -4,16 +4,25 @@ Based on Serial and U-boot, send command to update OpenWrt firmware.
 
 import serial
 import time
+import threading
 from collections import deque
 
+# the latest code of tftpy on Github fixes "bad file path" problem on windows 
+# but the latest version 0.8.1 on pip doesn't.
+# so i'm directly using this package without pip temporarily
+import tftpy
 
-# COM configuration
+
+# COM configurations
 PORT = "COM25"
 BAUD_RATE = 115200
 TIMEOUT = 0.1  # seconds, default 0.1
+# TFTP configurations
 SERVER_IP = "192.168.1.110"
 IPADDR = "192.168.1.251"
 BIN = "openwrt-ar71xx-generic-tl-wr710n-v1-squashfs-factory.bin"
+PATH = "firmware"
+TFTP_PORT = 69
 
 # commands to send in u-boot stage
 commands = deque([
@@ -24,6 +33,10 @@ commands = deque([
     f"cp.b 0x80002000 0x9f020000 $filesize\n",
     f"reset\n"
 ])
+
+# start TFTP server
+server = tftpy.TftpServer(PATH)
+threading.Thread(target=server.listen, args=(SERVER_IP, TFTP_PORT), daemon=True).start()
 
 com = serial.Serial(PORT, BAUD_RATE, timeout=TIMEOUT)
 
@@ -41,7 +54,7 @@ while True:
         com.write("\n".encode("utf-8"))  # stop autoboot
         break
 
-com.write("\n".encode("utf-8")) 
+com.write("\n".encode("utf-8"))
 
 # send commands
 while len(commands) > 0:
@@ -57,4 +70,5 @@ while len(commands) > 0:
         # print(f"[command] {command}")
         com.write(command.encode("utf-8"))
 
+server.stop(now=True)
 com.close()
