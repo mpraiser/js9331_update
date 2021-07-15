@@ -5,6 +5,7 @@ Based on Serial and U-boot, send command to update OpenWrt firmware.
 import serial
 import time
 import threading
+import json
 from collections import deque
 
 # the latest code of tftpy on Github fixes "bad file path" problem on windows 
@@ -13,32 +14,43 @@ from collections import deque
 import tftpy
 
 
-# COM configurations
-PORT = "COM25"
-BAUD_RATE = 115200
-TIMEOUT = 0.1  # seconds, default 0.1
-# TFTP configurations
-SERVER_IP = "192.168.1.110"
-IPADDR = "192.168.1.251"
-BIN = "openwrt-ar71xx-generic-tl-wr710n-v1-squashfs-factory.bin"
-PATH = "firmware"
-TFTP_PORT = 69
+with open("properties.json", "r") as fp:
+    properties = json.load(fp)
+
+# default_properties = {
+#     # COM configurations
+#     "com": "COM25",
+#     "baud_rate": 115200,
+#     "com_timeout": 0.1,  # seconds, default 0.1
+#     # TFTP configurations
+#     "server_ip": "192.168.1.110",
+#     "ipaddr": "192.168.1.251",
+#     "bin": "openwrt-ar71xx-generic-tl-wr710n-v1-squashfs-factory.bin",
+#     "path": "firmware",
+#     "tftp_port": 69
+# }
 
 # commands to send in u-boot stage
 commands = deque([
-    f"setenv serverip {SERVER_IP}\n",
-    f"setenv ipaddr {IPADDR}\n",
-    f"tftp 0x80002000 {BIN}\n",
+    f"setenv serverip {properties['server_ip']}\n",
+    f"setenv ipaddr {properties['ipaddr']}\n",
+    f"tftp 0x80002000 {properties['bin']}\n",
     f"erase 0x9f020000 +$filesize\n",
     f"cp.b 0x80002000 0x9f020000 $filesize\n",
     f"reset\n"
 ])
 
 # start TFTP server
-server = tftpy.TftpServer(PATH)
-threading.Thread(target=server.listen, args=(SERVER_IP, TFTP_PORT), daemon=True).start()
+server = tftpy.TftpServer(properties['path'])
+threading.Thread(
+    target=server.listen, 
+    args=(
+        properties['server_ip'], 
+        properties['tftp_port']
+        ), 
+    daemon=True).start()
 
-com = serial.Serial(PORT, BAUD_RATE, timeout=TIMEOUT)
+com = serial.Serial(properties['com'], properties['baud_rate'], timeout=properties['com_timeout'])
 
 # reboot into u-boot stage
 com.write("\n".encode("utf-8"))  # invoke the terminal

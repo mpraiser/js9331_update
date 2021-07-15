@@ -1,0 +1,10 @@
+{
+    "com": "COM25",
+    "baud_rate": 115200,
+    "com_timeout": 0.1,
+    "server_ip": "192.168.1.110",
+    "ipaddr": "192.168.1.251",
+    "bin": "openwrt-ar71xx-generic-tl-wr710n-v1-squashfs-factory.bin",
+    "path": "firmware",
+    "tftp_port": 69
+}
