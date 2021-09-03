@@ -1,5 +1,6 @@
 import serial
 import time
+import click
 from typing import Callable, Optional
 from functools import partial
 
@@ -13,8 +14,18 @@ UBOOT_READY = "ar7240> "
 
 
 class Updater:
-    def __init__(self, port: str, baud_rate: int, *, timeout: float = 0.1):
+    def __init__(
+            self, port: str,
+            baud_rate: int, *,
+            timeout: float = 0.1,
+            print_: Callable = print):
         self.com = serial.Serial(port, baud_rate, timeout=timeout)
+        if print_ == print:
+            self.print_ = partial(print, end="")
+        elif print_ == click.echo:
+            self.print_ = partial(click.echo, nl="")
+        else:
+            self.print_ = print_
 
     def cancel_and_activate(self):
         self.send(CANCEL)
@@ -26,7 +37,7 @@ class Updater:
             if not raw:
                 continue
             data = raw.decode(errors="ignore")
-            print(data, end="")
+            self.print_(data)
             return data
 
     def send(self, data: str):
@@ -47,6 +58,7 @@ class Updater:
 
     def ensure_uboot(self):
         self.cancel_and_activate()
+        time.sleep(0.5)
         self.send("reboot\n")
         self.ensure(
             (

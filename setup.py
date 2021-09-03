@@ -13,6 +13,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
+            "js9331-update=js9331_update.scripts.js9331_update:js9331_update"
         ],
     },
 )
