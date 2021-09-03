@@ -12,7 +12,7 @@ def start_tftp_server(path: str, ip: str, port: int):
 
 
 if __name__ == "__main__":
-    with open("properties.json", "r") as fp:
+    with open("../properties.json", "r") as fp:
         properties = json.load(fp)
 
     start_tftp_server(
